@@ -1,11 +1,12 @@
 #!/usr/bin/env python2.6
 #
-# Maze generator in 152 lines of python
+# Maze generator in 130 lines (non-blank/comment) of Python
 # Copyright (c) 2008 David Bau.  All rights reserved.
+# Modifications (c) 2011 Antti Kaihola: https://github.com/akaihola/pypdfmaze
 #
 # Can be used as either a command-line tool or as a cgi script
-# The arguments are w, h, m, cell, tube, wall, curve, and cross;
-# they all take numeric values.
+# Numeric arguments are w, h, m, cell, tube, wall, curve, and cross.
+# String argument -p specifies the page size, e.g. a4 or letter.
 
 import cgitb
 cgitb.enable()
@@ -15,14 +16,26 @@ import random
 import getopt
 import cgi
 import user
+from reportlab.lib import pagesizes
 from reportlab.pdfgen.canvas import Canvas
 from StringIO import StringIO
 
 def main():
   opts = {}
-  for k, v in getopt.getopt(sys.argv[1:], 'w:h:m:',
+  for k, v in getopt.getopt(sys.argv[1:], 'w:h:m:p:',
               ['cell=', 'tube=', 'wall=', 'curve=', 'cross='])[0]:
-    opts[k.strip('-')] = num(v)
+    optname = k.strip('-')
+    if optname != 'p':
+      # the -p option is a string (e.g. "-p a4" or "-p letter"),
+      # other options are int/float
+      v = num(v)
+    opts[optname] = v
+  if 'p' in opts:
+    # the -p option (e.g. 'a4' or 'letter') sets width and height, but they may
+    # be overridden with -w and -h
+    width, height = getattr(pagesizes, opts.pop('p').upper())
+    opts.setdefault('w', width)
+    opts.setdefault('h', height)
   drawmaze(sys.stdout, **opts)
 
 def cgimain():
